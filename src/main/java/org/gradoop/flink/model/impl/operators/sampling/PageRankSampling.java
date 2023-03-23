@@ -1,0 +1,135 @@
+/*
+ * Copyright © 2014 - 2021 Leipzig University (Database Research Group)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.gradoop.flink.model.impl.operators.sampling;
+
+import org.apache.flink.api.java.DataSet;
+import org.gradoop.common.model.api.entities.Edge;
+import org.gradoop.common.model.api.entities.GraphHead;
+import org.gradoop.common.model.api.entities.Vertex;
+import org.gradoop.flink.algorithms.gelly.pagerank.PageRank;
+import org.gradoop.flink.model.api.epgm.BaseGraph;
+import org.gradoop.flink.model.api.epgm.BaseGraphCollection;
+import org.gradoop.flink.model.impl.operators.aggregation.functions.count.VertexCount;
+import org.gradoop.flink.model.impl.operators.aggregation.functions.max.MaxVertexProperty;
+import org.gradoop.flink.model.impl.operators.aggregation.functions.min.MinVertexProperty;
+import org.gradoop.flink.model.impl.operators.aggregation.functions.sum.SumVertexProperty;
+import org.gradoop.flink.model.impl.operators.sampling.common.SamplingConstants;
+import org.gradoop.flink.model.impl.operators.sampling.functions.AddPageRankScoresToVertexCrossFunction;
+import org.gradoop.flink.model.impl.operators.sampling.functions.PageRankResultVertexFilter;
+
+/**
+ * Computes a PageRank-Sampling of the graph (new graph head will be generated).
+ *
+ * Uses the Gradoop-Wrapper of Flinks PageRank-algorithm {@link PageRank} with a dampening factor
+ * and a number of maximum iterations. It computes a per-vertex score which is the sum of the
+ * PageRank-scores transmitted over all in-edges. The score of each vertex is divided evenly
+ * among its out-edges.
+ * The PageRank-algorithm is called with {@code setIncludeZeroDegreeVertices(true)}.
+ *
+ * If vertices got different PageRank-scores, all scores are scaled in a range between 0 and 1.
+ * Then it retains all vertices with a PageRank-score greater or equal/smaller than a given
+ * sampling threshold - depending on the Boolean set in {@code sampleGreaterThanThreshold}.
+ *
+ * If ALL vertices got the same PageRank-score, it can be decided whether to sample all vertices
+ * or none of them - depending on the Boolean set in {@code keepVerticesIfSameScore}.
+ *
+ * Retains all edges which source- and target-vertices were chosen. There may retain some
+ * unconnected vertices in the sampled graph.
+ *
+ * @param <G>  The graph head type.
+ * @param <V>  The vertex type.
+ * @param <E>  The edge type.
+ * @param <LG> The type of the graph.
+ * @param <GC> The type of the graph collection.
+ */
+public class PageRankSampling<
+  G extends GraphHead,
+  V extends Vertex,
+  E extends Edge,
+  LG extends BaseGraph<G, V, E, LG, GC>,
+  GC extends BaseGraphCollection<G, V, E, LG, GC>> extends SamplingAlgorithm<G, V, E, LG, GC> {
+
+  /**
+   * Dampening factor used by PageRank-algorithm
+   */
+  private final double dampeningFactor;
+  /**
+   * Number of iterations used by PageRank-algorithm
+   */
+  private final int maxIteration;
+  /**
+   * Sampling threshold for PageRankScore
+   */
+  private final double threshold;
+  /**
+   * Whether to sample vertices with PageRank-score greater (true) or equal/smaller (false)
+   * than the threshold
+   */
+  private final boolean sampleGreaterThanThreshold;
+  /**
+   * Whether to sample all vertices (true) or none of them (false), in case all vertices got the
+   * same PageRank-score.
+   */
+  private final boolean keepVerticesIfSameScore;
+
+  /**
+   * Creates a new PageRankSampling instance.
+   *
+   * @param dampeningFactor The dampening factor used by PageRank-algorithm, e.g. 0.85
+   * @param maxIteration The number of iterations used by PageRank-algorithm, e.g. 40
+   * @param threshold The threshold for the PageRank-score (ranging between 0 and 1 when scaled),
+   *                  determining if a vertex is sampled, e.g. 0.5
+   * @param sampleGreaterThanThreshold Whether to sample vertices with a PageRank-score
+   *                                   greater (true) or equal/smaller (false) the threshold
+   * @param keepVerticesIfSameScore Whether to sample all vertices (true) or none of them (false)
+   *                                in case all vertices got the same PageRank-score.
+   */
+  public PageRankSampling(double dampeningFactor, int maxIteration, double threshold,
+    boolean sampleGreaterThanThreshold, boolean keepVerticesIfSameScore) {
+    this.dampeningFactor = dampeningFactor;
+    this.threshold = threshold;
+    this.maxIteration = maxIteration;
+    this.sampleGreaterThanThreshold = sampleGreaterThanThreshold;
+    this.keepVerticesIfSameScore = keepVerticesIfSameScore;
+  }
+
+  @Override
+  public LG sample(LG graph) {
+
+    LG pageRankGraph = graph.callForGraph(new PageRank<>(
+      SamplingConstants.PAGE_RANK_SCORE_PROPERTY_KEY,
+      dampeningFactor,
+      maxIteration,
+      true));
+
+    graph = graph.getFactory().fromDataSets(
+      graph.getGraphHead(), pageRankGraph.getVertices(), pageRankGraph.getEdges());
+
+    graph = graph
+      .aggregate(new MinVertexProperty(SamplingConstants.PAGE_RANK_SCORE_PROPERTY_KEY),
+        new MaxVertexProperty(SamplingConstants.PAGE_RANK_SCORE_PROPERTY_KEY),
+        new SumVertexProperty(SamplingConstants.PAGE_RANK_SCORE_PROPERTY_KEY),
+        new VertexCount());
+
+    DataSet<V> scaledVertices = graph.getVertices()
+      .crossWithTiny(graph.getGraphHead().first(1))
+      .with(new AddPageRankScoresToVertexCrossFunction<>())
+      .filter(new PageRankResultVertexFilter<>(threshold, sampleGreaterThanThreshold,
+        keepVerticesIfSameScore));
+
+    return graph.getFactory().fromDataSets(scaledVertices, graph.getEdges()).verify();
+  }
+}

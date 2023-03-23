@@ -1,0 +1,138 @@
+/*
+ * Copyright © 2014 - 2021 Leipzig University (Database Research Group)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.gradoop.flink.model.impl.operators.sampling;
+
+import org.apache.flink.api.java.DataSet;
+import org.gradoop.common.model.api.entities.Edge;
+import org.gradoop.common.model.api.entities.GraphHead;
+import org.gradoop.common.model.api.entities.Vertex;
+import org.gradoop.flink.model.api.epgm.BaseGraph;
+import org.gradoop.flink.model.api.epgm.BaseGraphCollection;
+import org.gradoop.flink.model.impl.functions.epgm.Id;
+import org.gradoop.flink.model.impl.functions.epgm.SourceId;
+import org.gradoop.flink.model.impl.functions.tuple.Value0Of3;
+import org.gradoop.flink.model.impl.operators.sampling.common.SamplingConstants;
+import org.gradoop.flink.model.impl.operators.sampling.functions.EdgeSourceVertexJoin;
+import org.gradoop.flink.model.impl.operators.sampling.functions.EdgeTargetVertexJoin;
+import org.gradoop.flink.model.impl.operators.sampling.functions.EdgesWithSampledVerticesFilter;
+import org.gradoop.flink.model.impl.operators.sampling.functions.FilterVerticesWithDegreeOtherThanGiven;
+import org.gradoop.flink.model.impl.operators.sampling.functions.Neighborhood;
+import org.gradoop.flink.model.impl.operators.sampling.functions.RandomVertex;
+
+/**
+ * Computes a vertex sampling of the graph (new graph head will be generated). Retains randomly
+ * chosen vertices of a given relative amount and includes all neighbors of those vertices in the
+ * sampling. All edges which source- and target-vertices were chosen are sampled, too.
+ *
+ * @param <G>  The graph head type.
+ * @param <V>  The vertex type.
+ * @param <E>  The edge type.
+ * @param <LG> The type of the graph.
+ * @param <GC> The type of the graph collection.
+ */
+public class RandomVertexNeighborhoodSampling<
+  G extends GraphHead,
+  V extends Vertex,
+  E extends Edge,
+  LG extends BaseGraph<G, V, E, LG, GC>,
+  GC extends BaseGraphCollection<G, V, E, LG, GC>> extends SamplingAlgorithm<G, V, E, LG, GC> {
+
+  /**
+   * Relative amount of vertices in the result graph
+   */
+  private final float sampleSize;
+
+  /**
+   * Seed for the random number generator
+   * If seed is 0, the random generator is created without seed
+   */
+  private final long randomSeed;
+
+  /**
+   * Type of degree which should be considered: input degree, output degree, sum of both.
+   */
+  private final Neighborhood neighborType;
+
+  /**
+   * Creates new RandomVertexNeighborhoodSampling instance.
+   *
+   * @param sampleSize relative sample size
+   */
+  public RandomVertexNeighborhoodSampling(float sampleSize) {
+    this(sampleSize, 0L);
+  }
+
+  /**
+   * Creates new RandomVertexNeighborhoodSampling instance.
+   *
+   * @param sampleSize relative sample size
+   * @param randomSeed random seed value (can be 0)
+   */
+  public RandomVertexNeighborhoodSampling(float sampleSize, long randomSeed) {
+    this.sampleSize = sampleSize;
+    this.randomSeed = randomSeed;
+    this.neighborType = Neighborhood.BOTH;
+  }
+
+  /**
+   * Creates new RandomVertexNeighborhoodSampling instance.
+   *
+   * @param sampleSize   relative sample size
+   * @param randomSeed   random seed value (can be 0
+   * @param neighborType type of neighbor-vertex for sampling
+   */
+  public RandomVertexNeighborhoodSampling(float sampleSize, long randomSeed,
+                                          Neighborhood neighborType) {
+    this.sampleSize = sampleSize;
+    this.randomSeed = randomSeed;
+    this.neighborType = neighborType;
+  }
+
+  /**
+   * Creates new RandomVertexSampling instance.
+   *
+   * @param sampleSize   relative sample size
+   * @param neighborType type of neighbor-vertex for sampling
+   */
+  public RandomVertexNeighborhoodSampling(float sampleSize,
+                                          Neighborhood neighborType) {
+    this.sampleSize = sampleSize;
+    this.randomSeed = 0L;
+    this.neighborType = neighborType;
+  }
+
+  @Override
+  public LG sample(LG graph) {
+
+    DataSet<V> sampledVertices = graph.getVertices()
+      .map(new RandomVertex<>(sampleSize, randomSeed, SamplingConstants.PROPERTY_KEY_SAMPLED));
+
+    DataSet<E> newEdges = graph.getEdges()
+      .join(sampledVertices)
+      .where(new SourceId<>()).equalTo(new Id<>())
+      .with(new EdgeSourceVertexJoin<>(SamplingConstants.PROPERTY_KEY_SAMPLED))
+      .join(sampledVertices)
+      .where(1).equalTo(new Id<>())
+      .with(new EdgeTargetVertexJoin<>(SamplingConstants.PROPERTY_KEY_SAMPLED))
+      .filter(new EdgesWithSampledVerticesFilter<>(neighborType))
+      .map(new Value0Of3<>());
+
+    graph = graph.getFactory().fromDataSets(graph.getVertices(), newEdges)
+      .callForGraph(new FilterVerticesWithDegreeOtherThanGiven<>(0L));
+
+    return graph;
+  }
+}

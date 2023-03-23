@@ -1,0 +1,70 @@
+/*
+ * Copyright © 2014 - 2021 Leipzig University (Database Research Group)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.gradoop.flink.model.impl.operators.sampling.functions;
+
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.gradoop.common.exceptions.UnsupportedTypeException;
+import org.gradoop.common.model.api.entities.Edge;
+
+/**
+ * Filters the edges with sampled vertices. If any vertices of the edge does not have any related
+ * property for sampling, we consider that vertex as not sampled.
+ *
+ * @param <E> The edge type.
+ */
+public class EdgesWithSampledVerticesFilter<E extends Edge>
+  implements FilterFunction<Tuple3<E, Boolean, Boolean>> {
+
+  /**
+   * Type of neighborhood
+   */
+  private Neighborhood neighborType;
+
+  /**
+   * Constructor
+   *
+   * @param neighborType type of neighborhood
+   */
+  public EdgesWithSampledVerticesFilter(Neighborhood neighborType) {
+    this.neighborType = neighborType;
+  }
+
+  @Override
+  public boolean filter(Tuple3<E, Boolean, Boolean> tuple) {
+
+    boolean isSourceVertexMarked = tuple.f1;
+    boolean isTargetVertexMarked = tuple.f2;
+
+    boolean filter;
+
+    switch (neighborType) {
+    case BOTH:
+      filter = isSourceVertexMarked || isTargetVertexMarked;
+      break;
+    case IN:
+      filter = isTargetVertexMarked;
+      break;
+    case OUT:
+      filter = isSourceVertexMarked;
+      break;
+    default:
+      throw new UnsupportedTypeException("NeighborType needs to be BOTH, IN or OUT");
+    }
+
+    return filter;
+  }
+}
