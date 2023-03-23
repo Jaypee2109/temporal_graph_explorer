@@ -20,6 +20,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.gradoop.common.model.api.entities.GraphElement;
 import org.gradoop.common.model.impl.properties.Property;
+import org.gradoop.demo.server.pojo.MetricRequest;
 import org.gradoop.temporal.model.impl.pojo.TemporalEdge;
 import org.gradoop.temporal.model.impl.pojo.TemporalElement;
 import org.gradoop.temporal.model.impl.pojo.TemporalGraphHead;
@@ -27,295 +28,342 @@ import org.gradoop.temporal.model.impl.pojo.TemporalVertex;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Converts a logical graph or a read JSON into a eCharts-conform JSON.
  */
 public class EChartsJSONBuilder {
-  /**
-   * Key for vertex, edge and graph id.
-   */
-  private static final String IDENTIFIER = "id";
-  /**
-   * Key for the type of the returned JSON, either graph or collection.
-   */
-  private static final String TYPE = "type";
-  /**
-   * Key for vertex, edge and graph label.
-   */
-  private static final String LABEL = "label";
-  /**
-   * Key for graph identifiers at vertices and edges.
-   */
-  private static final String GRAPHS = "graphs";
-  /**
-   * Key for properties of graphs, vertices and edges.
-   */
-  private static final String PROPERTIES = "properties";
-  /**
-   * Key for vertex identifiers at graphs.
-   */
-  private static final String VERTICES = "nodes";
-  /**
-   * Key for edge identifiers at graphs.
-   */
-  private static final String EDGES = "edges";
-  /**
-   * Key for edge source vertex id.
-   */
-  private static final String EDGE_SOURCE = "source";
-  /**
-   * Key for edge target vertex id.
-   */
-  private static final String EDGE_TARGET = "target";
-  /**
-   * Key for vertex identifiers at graphs.
-   */
-  private static final String VERTEX_KEYS = "node_keys";
-  /**
-   * Key for vertex identifiers at graphs.
-   */
-  private static final String EDGE_KEYS = "edge_keys";
+    /**
+     * Key for vertex, edge and graph id.
+     */
+    private static final String IDENTIFIER = "id";
+    /**
+     * Key for the type of the returned JSON, either graph or collection.
+     */
+    private static final String TYPE = "type";
+    /**
+     * Key for vertex, edge and graph label.
+     */
+    private static final String LABEL = "label";
+    /**
+     * Key for graph identifiers at vertices and edges.
+     */
+    private static final String GRAPHS = "graphs";
+    /**
+     * Key for properties of graphs, vertices and edges.
+     */
+    private static final String PROPERTIES = "properties";
+    /**
+     * Key for vertex identifiers at graphs.
+     */
+    private static final String VERTICES = "nodes";
+    /**
+     * Key for edge identifiers at graphs.
+     */
+    private static final String EDGES = "edges";
+    /**
+     * Key for edge source vertex id.
+     */
+    private static final String EDGE_SOURCE = "source";
+    /**
+     * Key for edge target vertex id.
+     */
+    private static final String EDGE_TARGET = "target";
+    /**
+     * Key for vertex identifiers at graphs.
+     */
+    private static final String VERTEX_KEYS = "node_keys";
+    /**
+     * Key for vertex identifiers at graphs.
+     */
+    private static final String EDGE_KEYS = "edge_keys";
 
-  /**
-   * A color map for label colors.
-   */
-  private static final HashMap<String, String> LABEL_COLOR_MAP = new HashMap<>();
+    /**
+     * A color map for label colors.
+     */
+    private static final HashMap<String, String> LABEL_COLOR_MAP = new HashMap<>();
 
-  /**
-   * Takes a logical graph and converts it into a eCharts-conform JSON.
-   *
-   * @param graphHeads the graph heads
-   * @param vertices  the vertices
-   * @param edges     the edges
-   * @return a eCharts-conform JSON
-   * @throws JSONException if the creation of the JSON fails
-   */
-  static String getJSONString(
-    List<TemporalGraphHead> graphHeads,
-    List<TemporalVertex> vertices,
-    List<TemporalEdge> edges) throws JSONException {
+    /**
+     * Takes a logical graph and converts it into a eCharts-conform JSON.
+     *
+     * @param graphHeads the graph heads
+     * @param vertices   the vertices
+     * @param edges      the edges
+     * @return a eCharts-conform JSON
+     * @throws JSONException if the creation of the JSON fails
+     */
+    static String getJSONString(
+            List<TemporalGraphHead> graphHeads,
+            List<TemporalVertex> vertices,
+            List<TemporalEdge> edges) throws JSONException {
 
-    JSONObject returnedJSON = new JSONObject();
-    HashSet<String> uniqueVertexPropertyKeys = new HashSet<>();
-    HashSet<String> uniqueEdgePropertyKeys = new HashSet<>();
+        JSONObject returnedJSON = new JSONObject();
+        HashSet<String> uniqueVertexPropertyKeys = new HashSet<>();
+        HashSet<String> uniqueEdgePropertyKeys = new HashSet<>();
 
-    boolean hasSpatialVertexProperties = !vertices.isEmpty();
+        boolean hasSpatialVertexProperties = !vertices.isEmpty();
 
-    List<JSONObject> graphObjects = graphHeads.stream().map(EChartsJSONBuilder::getGraphHeadObject)
-      .collect(Collectors.toList());
+        List<JSONObject> graphObjects = graphHeads.stream().map(EChartsJSONBuilder::getGraphHeadObject)
+                .collect(Collectors.toList());
 
-    returnedJSON.put(GRAPHS, graphObjects);
+        returnedJSON.put(GRAPHS, graphObjects);
 
-    JSONArray vertexArray = new JSONArray();
-    for (TemporalVertex vertex : vertices) {
-      JSONObject vertexObject = getVertexObject(vertex);
-      vertexArray.put(vertexObject);
+        JSONArray vertexArray = new JSONArray();
+        for (TemporalVertex vertex : vertices) {
+            JSONObject vertexObject = getVertexObject(vertex);
+            vertexArray.put(vertexObject);
 
-      hasSpatialVertexProperties = hasSpatialVertexProperties && vertexObject.has("value") &&
-        vertexObject.getJSONArray("value").getDouble(0) != 0. &&
-        vertexObject.getJSONArray("value").getDouble(1) != 0.;
+            hasSpatialVertexProperties = hasSpatialVertexProperties && vertexObject.has("value") &&
+                    vertexObject.getJSONArray("value").getDouble(0) != 0. &&
+                    vertexObject.getJSONArray("value").getDouble(1) != 0.;
 
-      if (vertex.getProperties() != null) {
-        vertex.getProperties().forEach((prop) -> {
-          if (prop.getValue().isNumber()) {
-            uniqueVertexPropertyKeys.add(prop.getKey());
-          }
-        });
-      }
-    }
-    returnedJSON.put(VERTICES, vertexArray);
-    returnedJSON.put(VERTEX_KEYS, new JSONArray(uniqueVertexPropertyKeys));
-
-    returnedJSON.put(TYPE, hasSpatialVertexProperties ? "spatialGraph" : "graph");
-
-    JSONArray edgeArray = new JSONArray();
-    for (TemporalEdge edge : edges) {
-      edgeArray.put(getEdgeObject(edge));
-
-      if (edge.getProperties() != null) {
-        edge.getProperties().forEach((prop) -> {
-          if (prop.getValue().isNumber()) {
-            uniqueEdgePropertyKeys.add(prop.getKey());
-          }
-        });
-      }
-    }
-    returnedJSON.put(EDGES, edgeArray);
-    returnedJSON.put(EDGE_KEYS, new JSONArray(uniqueEdgePropertyKeys));
-
-    return returnedJSON.toString();
-  }
-
-  /**
-   * Get a JSON object representing a Gradoop graph head.
-   *
-   * @param graphHead the graph head instance to translate
-   * @return the JSON object representing the graph head
-   */
-  private static JSONObject getGraphHeadObject(TemporalGraphHead graphHead) {
-    try {
-      JSONObject graphObject = new JSONObject();
-
-      JSONObject graphProperties = new JSONObject();
-      graphObject.put(IDENTIFIER, graphHead.getId());
-      graphObject.put(LABEL, graphHead.getLabel());
-      if (graphHead.getProperties() != null) {
-        for (Property prop : graphHead.getProperties()) {
-          graphProperties.put(prop.getKey(), prop.getValue());
+            if (vertex.getProperties() != null) {
+                vertex.getProperties().forEach((prop) -> {
+                    if (prop.getValue().isNumber()) {
+                        uniqueVertexPropertyKeys.add(prop.getKey());
+                    }
+                });
+            }
         }
-      }
-      graphObject.put(PROPERTIES, graphProperties);
-      addTemporalProperties(graphObject, graphHead);
-      return graphObject;
-    } catch (JSONException exception) {
-      throw new RuntimeException("Failed parsing graph head.");
-    }
-  }
+        returnedJSON.put(VERTICES, vertexArray);
+        returnedJSON.put(VERTEX_KEYS, new JSONArray(uniqueVertexPropertyKeys));
 
-  /**
-   * Get a JSON object representing a Gradoop vertex.
-   *
-   * @param vertex the vertex instance to translate
-   * @return the JSON object representing the vertex
-   */
-  private static JSONObject getVertexObject(TemporalVertex vertex) throws JSONException {
-    JSONObject vertexObject = new JSONObject();
-    JSONObject vertexData = new JSONObject();
-    JSONArray nodeValues = new JSONArray();
+        returnedJSON.put(TYPE, hasSpatialVertexProperties ? "spatialGraph" : "graph");
 
-    vertexData.put(IDENTIFIER, vertex.getId());
-    vertexData.put(LABEL, vertex.getLabel());
+        JSONArray edgeArray = new JSONArray();
+        for (TemporalEdge edge : edges) {
+            edgeArray.put(getEdgeObject(edge));
 
-    vertexObject.put("itemStyle", new JSONObject().put("color", getElementColor(vertex)));
-
-    JSONObject vertexProperties = new JSONObject();
-    if (vertex.getProperties() != null) {
-      if (vertex.hasProperty("long")) {
-        if (vertex.getPropertyValue("long").isDouble()) {
-          nodeValues.put(0, vertex.getPropertyValue("long").getDouble());
-        } else if (vertex.getPropertyValue("long").isString()) {
-          nodeValues.put(0, Double.parseDouble(vertex.getPropertyValue("long").getString()));
+            if (edge.getProperties() != null) {
+                edge.getProperties().forEach((prop) -> {
+                    if (prop.getValue().isNumber()) {
+                        uniqueEdgePropertyKeys.add(prop.getKey());
+                    }
+                });
+            }
         }
-      } else {
-        nodeValues.put(0, 0);
-      }
-      if (vertex.hasProperty("lat")) {
-        if (vertex.getPropertyValue("lat").isDouble()) {
-          nodeValues.put(1, vertex.getPropertyValue("lat").getDouble());
-        } else if (vertex.getPropertyValue("lat").isString()) {
-          nodeValues.put(1, Double.parseDouble(vertex.getPropertyValue("lat").getString()));
+        returnedJSON.put(EDGES, edgeArray);
+        returnedJSON.put(EDGE_KEYS, new JSONArray(uniqueEdgePropertyKeys));
+
+        return returnedJSON.toString();
+    }
+
+    /**
+     * Get a JSON object representing a Gradoop graph head.
+     *
+     * @param graphHead the graph head instance to translate
+     * @return the JSON object representing the graph head
+     */
+    private static JSONObject getGraphHeadObject(TemporalGraphHead graphHead) {
+        try {
+            JSONObject graphObject = new JSONObject();
+
+            JSONObject graphProperties = new JSONObject();
+            graphObject.put(IDENTIFIER, graphHead.getId());
+            graphObject.put(LABEL, graphHead.getLabel());
+            if (graphHead.getProperties() != null) {
+                for (Property prop : graphHead.getProperties()) {
+                    graphProperties.put(prop.getKey(), prop.getValue());
+                }
+            }
+            graphObject.put(PROPERTIES, graphProperties);
+            addTemporalProperties(graphObject, graphHead);
+            return graphObject;
+        } catch (JSONException exception) {
+            throw new RuntimeException("Failed parsing graph head.");
         }
-      } else {
-        nodeValues.put(1, 0);
-      }
-      for (Property prop : vertex.getProperties()) {
-        vertexProperties.put(prop.getKey(), prop.getValue());
-      }
     }
 
-    vertexData.put(PROPERTIES, vertexProperties);
-    addTemporalProperties(vertexData, vertex);
-    nodeValues.put(2, vertexData);
+    /**
+     * Get a JSON object representing a Gradoop vertex.
+     *
+     * @param vertex the vertex instance to translate
+     * @return the JSON object representing the vertex
+     */
+    private static JSONObject getVertexObject(TemporalVertex vertex) throws JSONException {
+        JSONObject vertexObject = new JSONObject();
+        JSONObject vertexData = new JSONObject();
+        JSONArray nodeValues = new JSONArray();
 
-    vertexObject.put("name", vertex.getId());
-    vertexObject.put("value", nodeValues);
-    return vertexObject;
-  }
+        vertexData.put(IDENTIFIER, vertex.getId());
+        vertexData.put(LABEL, vertex.getLabel());
 
-  /**
-   * Get a JSON object representing a Gradoop edge.
-   *
-   * @param edge the graph head instance to translate
-   * @return the JSON object representing the edge
-   */
-  private static JSONObject getEdgeObject(TemporalEdge edge) throws JSONException {
-    JSONObject edgeObject = new JSONObject();
-    JSONObject edgeData = new JSONObject();
-    JSONArray edgeValues = new JSONArray();
-    JSONObject lineStyle = new JSONObject();
+        vertexObject.put("itemStyle", new JSONObject().put("color", getElementColor(vertex)));
 
-    edgeObject.put(EDGE_SOURCE, edge.getSourceId());
-    edgeObject.put(EDGE_TARGET, edge.getTargetId());
+        JSONObject vertexProperties = new JSONObject();
+        if (vertex.getProperties() != null) {
+            if (vertex.hasProperty("long")) {
+                if (vertex.getPropertyValue("long").isDouble()) {
+                    nodeValues.put(0, vertex.getPropertyValue("long").getDouble());
+                } else if (vertex.getPropertyValue("long").isString()) {
+                    nodeValues.put(0, Double.parseDouble(vertex.getPropertyValue("long").getString()));
+                }
+            } else {
+                nodeValues.put(0, 0);
+            }
+            if (vertex.hasProperty("lat")) {
+                if (vertex.getPropertyValue("lat").isDouble()) {
+                    nodeValues.put(1, vertex.getPropertyValue("lat").getDouble());
+                } else if (vertex.getPropertyValue("lat").isString()) {
+                    nodeValues.put(1, Double.parseDouble(vertex.getPropertyValue("lat").getString()));
+                }
+            } else {
+                nodeValues.put(1, 0);
+            }
+            for (Property prop : vertex.getProperties()) {
+                vertexProperties.put(prop.getKey(), prop.getValue());
+            }
+        }
 
-    edgeObject.put("lineStyle", lineStyle.put("color", getElementColor(edge)));
+        vertexData.put(PROPERTIES, vertexProperties);
+        addTemporalProperties(vertexData, vertex);
+        nodeValues.put(2, vertexData);
 
-    edgeData.put(IDENTIFIER, edge.getId());
-    edgeData.put(LABEL, edge.getLabel());
-    JSONObject edgeProperties = new JSONObject();
-    if (edge.getProperties() != null) {
-      for (Property prop : edge.getProperties()) {
-        edgeProperties.put(prop.getKey(), prop.getValue());
-      }
+        vertexObject.put("name", vertex.getId());
+        vertexObject.put("value", nodeValues);
+        return vertexObject;
     }
-    edgeData.put(PROPERTIES, edgeProperties);
-    addTemporalProperties(edgeData, edge);
-    edgeValues.put(2, edgeData);
-    edgeObject.put("value", edgeValues);
-    return edgeObject;
-  }
 
-  /**
-   * Adds the four bitemporal attributes of the temporal element to the given json object.
-   *
-   * @param object the JSON object to add the attributes.
-   * @param element the temporal element to extract the bitemporal attributes
-   * @throws JSONException in case of a parsing error
-   */
-  private static void addTemporalProperties(JSONObject object, TemporalElement element) throws JSONException {
-    final DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+    /**
+     * Get a JSON object representing a Gradoop edge.
+     *
+     * @param edge the graph head instance to translate
+     * @return the JSON object representing the edge
+     */
+    private static JSONObject getEdgeObject(TemporalEdge edge) throws JSONException {
+        JSONObject edgeObject = new JSONObject();
+        JSONObject edgeData = new JSONObject();
+        JSONArray edgeValues = new JSONArray();
+        JSONObject lineStyle = new JSONObject();
 
-    object.put("val_from", formatter.format(new Date(element.getValidFrom())));
-    object.put("val_to", formatter.format(new Date(element.getValidTo())));
-    object.put("tx_from", formatter.format(new Date(element.getTxFrom())));
-    object.put("tx_to", formatter.format(new Date(element.getTxTo())));
-  }
+        edgeObject.put(EDGE_SOURCE, edge.getSourceId());
+        edgeObject.put(EDGE_TARGET, edge.getTargetId());
 
-  /**
-   * Returns true, iff the given property has a property named '_diff' of type Integer.
-   *
-   * @param element the element to check
-   * @return true, iff the given property has a property named '_diff' of type Integer
-   */
-  private static boolean hasDiffProperty(GraphElement element) {
-    return element.hasProperty("_diff") && element.getPropertyValue("_diff").isInt();
-  }
+        edgeObject.put("lineStyle", lineStyle.put("color", getElementColor(edge)));
 
-  /**
-   * Get the vertex/edge color according to the value of the '_diff' property or the label
-   *
-   * @param element the graph element that may store the property named '_diff'
-   * @return a hexadecimal color code as String
-   */
-  private static String getElementColor(GraphElement element) {
-    // first check if a _diff property is available
-    if (hasDiffProperty(element)) {
-      switch (element.getPropertyValue("_diff").getInt()) {
-      case 1: return "#73db46";
-      case -1: return "#f4451f";
-      case 0:
-      default: return "#999999";
-      }
+        edgeData.put(IDENTIFIER, edge.getId());
+        edgeData.put(LABEL, edge.getLabel());
+        JSONObject edgeProperties = new JSONObject();
+        if (edge.getProperties() != null) {
+            for (Property prop : edge.getProperties()) {
+                edgeProperties.put(prop.getKey(), prop.getValue());
+            }
+        }
+        edgeData.put(PROPERTIES, edgeProperties);
+        addTemporalProperties(edgeData, edge);
+        edgeValues.put(2, edgeData);
+        edgeObject.put("value", edgeValues);
+        return edgeObject;
     }
-    // then color by label
-    if (!LABEL_COLOR_MAP.containsKey(element.getLabel())) {
-      int r = 0;
-      int g = 0;
-      int b = 0;
-      while (r + g + b < 382) {
-        r = (int) Math.floor((Math.random() * 255));
-        g = (int) Math.floor((Math.random() * 255));
-        b = (int) Math.floor((Math.random() * 255));
-      }
-      LABEL_COLOR_MAP.put(element.getLabel(), String. format("#%02X%02X%02X", r, g, b));
+
+    /**
+     * Generate metric response in JSON Format.
+     *
+     * @param metricData    the metric evolution
+     * @param vertices      the vertices, which are present in the metric evolution
+     * @param centricMetric the centric degrees of the vertices
+     * @param request       the request object
+     * @return Response as JSON
+     */
+    public static String getMetricJSON(JSONArray metricData, List<TemporalVertex> vertices, JSONObject centricMetric, MetricRequest request) throws JSONException {
+
+        return "{" +
+                "\"from\":" + request.getTimestamp1() +
+                ",\"to\":" + request.getTimestamp2() +
+                ",\"centricMetric\":" + centricMetric +
+                ",\"allVertices\":" + request.allVertices() +
+                ",\"vertices\":" + getVerticesWithLabel(vertices) +
+                ",\"data\":" + metricData +
+                "}";
     }
-    return LABEL_COLOR_MAP.get(element.getLabel());
-  }
+
+    /**
+     * Get array of vertices with their labels in JSON.
+     *
+     * @param vertices list of temporal vertices
+     * @return JSON Array of vertices with their labels
+     */
+    private static JSONArray getVerticesWithLabel(List<TemporalVertex> vertices) throws JSONException {
+        JSONArray verticesJSON = new JSONArray();
+
+        for (TemporalVertex vertex : vertices) {
+
+            JSONObject vertexJSON = new JSONObject();
+            vertexJSON.put("id", vertex.getId());
+            vertexJSON.put("label", vertex.getLabel());
+            String property = "";
+
+            if (vertex.getPropertyValue("name") != null)
+                property = vertex.getPropertyValue("name").toString();
+
+            vertexJSON.put("property", property);
+            verticesJSON.put(vertexJSON);
+
+        }
+
+        return verticesJSON;
+    }
+
+    /**
+     * Adds the four bitemporal attributes of the temporal element to the given json object.
+     *
+     * @param object  the JSON object to add the attributes.
+     * @param element the temporal element to extract the bitemporal attributes
+     * @throws JSONException in case of a parsing error
+     */
+    private static void addTemporalProperties(JSONObject object, TemporalElement element) throws JSONException {
+        final DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        object.put("val_from", formatter.format(new Date(element.getValidFrom())));
+        object.put("val_to", formatter.format(new Date(element.getValidTo())));
+        object.put("tx_from", formatter.format(new Date(element.getTxFrom())));
+        object.put("tx_to", formatter.format(new Date(element.getTxTo())));
+    }
+
+    /**
+     * Returns true, iff the given property has a property named '_diff' of type Integer.
+     *
+     * @param element the element to check
+     * @return true, iff the given property has a property named '_diff' of type Integer
+     */
+    private static boolean hasDiffProperty(GraphElement element) {
+        return element.hasProperty("_diff") && element.getPropertyValue("_diff").isInt();
+    }
+
+    /**
+     * Get the vertex/edge color according to the value of the '_diff' property or the label
+     *
+     * @param element the graph element that may store the property named '_diff'
+     * @return a hexadecimal color code as String
+     */
+    private static String getElementColor(GraphElement element) {
+        // first check if a _diff property is available
+        if (hasDiffProperty(element)) {
+            switch (element.getPropertyValue("_diff").getInt()) {
+                case 1:
+                    return "#73db46";
+                case -1:
+                    return "#f4451f";
+                case 0:
+                default:
+                    return "#999999";
+            }
+        }
+        // then color by label
+        if (!LABEL_COLOR_MAP.containsKey(element.getLabel())) {
+            int r = 0;
+            int g = 0;
+            int b = 0;
+            while (r + g + b < 382) {
+                r = (int) Math.floor((Math.random() * 255));
+                g = (int) Math.floor((Math.random() * 255));
+                b = (int) Math.floor((Math.random() * 255));
+            }
+            LABEL_COLOR_MAP.put(element.getLabel(), String.format("#%02X%02X%02X", r, g, b));
+        }
+        return LABEL_COLOR_MAP.get(element.getLabel());
+    }
 }

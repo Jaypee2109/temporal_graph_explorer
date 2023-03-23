@@ -48,7 +48,7 @@ let maxVertexDiameter = 120;
 /**
  * Whenever one of the view options is changed, redraw the graph
  */
-$(document).on("change", '.redraw', function() {
+$(document).on("change", '.redraw', function () {
     if (bufferedData) {
         drawGraph(bufferedData, false);
     }
@@ -227,7 +227,7 @@ function buildCytoscape() {
                 let maxValue = minMaxPropValue.vertex[selectedValue].max;
 
                 if (maxValue !== minValue) {
-                    return getAdaptiveValue(minValue, maxValue, 4 , 20, propValue);
+                    return getAdaptiveValue(minValue, maxValue, 4, 20, propValue);
                 }
             }
         }
@@ -266,7 +266,7 @@ function buildCytoscape() {
                 for (let [key, value] of Object.entries(this.data('properties'))) {
                     if (key === 'label') {
                         qtipText += '<b>' + value + '</b><br>';
-                    } else if (key === 'id' || key === 'source' || key === 'target'){
+                    } else if (key === 'id' || key === 'source' || key === 'target') {
                         // don't print
                     } else {
                         qtipText += key + ' : ' + value + '<br>';
@@ -279,6 +279,9 @@ function buildCytoscape() {
                 qtipText += 'tx_to : ' + this.data('tx_to') + '<br>';
                 qtipText += 'val_from : ' + this.data('val_from') + '<br>';
                 qtipText += 'val_to : ' + this.data('val_to') + '<br>';
+                qtipText += '<br>';
+                qtipText += '';
+
 
                 content.innerHTML = qtipText;
                 return content;
@@ -350,7 +353,7 @@ function getEChartsOptions(useLeaflet) {
     let options = {
         tooltip: {
             trigger: 'item',
-            triggerOn : 'click',
+            triggerOn: 'click',
         },
         series: [
             {
@@ -362,7 +365,7 @@ function getEChartsOptions(useLeaflet) {
                 edgeLabel: {
                     show: true,
                     position: "middle",
-                    formatter : function (params) {
+                    formatter: function (params) {
                         if (!$('#showEdgeLabels').is(':checked')) {
                             return '';
                         }
@@ -376,7 +379,7 @@ function getEChartsOptions(useLeaflet) {
                         return labelString;
                     }
                 },
-                selectedMode : 'single',
+                selectedMode: 'single',
                 lineStyle: {
                     width: 2,
                     opacity: 0.8,
@@ -398,7 +401,7 @@ function getEChartsOptions(useLeaflet) {
                         return labelString;
                     },
                 },
-                tooltip : {
+                tooltip: {
                     formatter: function (params) {
                         let content = document.createElement('div');
                         let text = '';
@@ -408,7 +411,7 @@ function getEChartsOptions(useLeaflet) {
                             text += '<b>' + label + '</b><br>';
                         }
                         for (let [key, value] of Object.entries(params.value[2]['properties'])) {
-                            if (key === 'id' || key === 'source' || key === 'target'){
+                            if (key === 'id' || key === 'source' || key === 'target') {
                                 // don't print
                             } else {
                                 text += key + ' : ' + value + '<br>';
@@ -420,15 +423,34 @@ function getEChartsOptions(useLeaflet) {
                         text += 'tx_to : ' + params.value[2]['tx_to'] + '<br>';
                         text += 'val_from : ' + params.value[2]['val_from'] + '<br>';
                         text += 'val_to : ' + params.value[2]['val_to'] + '<br>';
+                        text += '<br>';
+
+                        console.log(params);
+
 
                         content.innerHTML = text;
+
+                        if (params.dataType === "node") {
+                            let metricButton = document.createElement("button");
+                            metricButton.textContent = "Calculate Metric";
+                            metricButton.addEventListener("click", function (event) {
+                                getMetric(params);
+                            })
+
+                            let paramsString = JSON.stringify(params.value[2]).replace(/"/g, '\\"');
+                            console.log(paramsString)
+
+                            content.classList.add('tooltip-active');
+                            content.appendChild(metricButton);
+                        }
+
                         return content;
                     }
                 },
                 labelLayout: {
                     hideOverlap: true,
                 },
-                autoCurveness : 30,
+                autoCurveness: 30,
                 emphasis: {
                     focus: 'adjacency',
                     lineStyle: {
@@ -484,18 +506,88 @@ function getEChartsOptions(useLeaflet) {
 }
 
 function loadDatabases() {
-    $.get('http://localhost:2342/graphs', function(response) {
+    $.get('http://localhost:2342/graphs', function (response) {
         let options = '';
-        for (i = 0; i < response.length ; i++) {
+        for (i = 0; i < response.length; i++) {
             options += '<option value="' + response[i] + '">' + response[i] + '</option>';
         }
-        $('#databaseName').html(options);
+        $('.databaseName').html(options);
     }, "json");
 }
 
+/**
+ * Request existing datasets and their vertices.
+ */
+function loadDatabaseAndVertices() {
+    $.get("http://localhost:2342/graphs", function (response) {
+        let options = '';
+        for (i = 0; i < response.length; i++) {
+            options += '<option value="' + response[i] + '">' + response[i] + '</option>';
+        }
+        $('.databaseName').html(options);
+
+
+        let defaultDatabase = $('.databaseName option:first').val();
+        loadVertices(defaultDatabase);
+
+        $('.databaseName').on("change", function () {
+            let selectedDatabase = $(this).val();
+            loadVertices(selectedDatabase);
+        });
+    }, "json");
+
+}
+
 function getAdaptiveValue(minValue, maxValue, smallestBound, highestBound, currentValue) {
-    return ( ( highestBound - smallestBound ) * currentValue +
-        ( smallestBound * maxValue - minValue * highestBound) ) /
+    return ((highestBound - smallestBound) * currentValue +
+            (smallestBound * maxValue - minValue * highestBound)) /
         (maxValue - minValue);
+}
+
+/**
+ * Request vertices with labels of a temporal graph dataset.
+ *
+ * @param database the dataset to request the vertices from
+ */
+function loadVertices(database) {
+    document.querySelector("#vertices").disable();
+
+    $.ajax({
+        url: "http://localhost:2342/vertices/" + database,
+        dataType: "json",
+        type: "get",
+        stream: true,
+
+        success: function (output) {
+
+            document.querySelector("#vertices").setOptions(output);
+            document.querySelector("#vertices").enable();
+        }
+    });
+}
+
+/**
+ * Request degree of selected vertex.
+ *
+ * @param params the configuration
+ *
+ * @returns {boolean} false if request failed
+ */
+function getMetric(params) {
+
+    let request = {
+        dbName: getSelectedDatabase(),
+        metric: "BOTH degree",
+        predicate: "fromTo",
+        timestamp1: params.value[2].val_from,
+        timestamp2: params.value[2].val_to,
+        filters: params.value[2].id
+    };
+
+    let queryString = new URLSearchParams(request).toString();
+
+    window.location.href = "../html/metric.html?" + queryString;
+
+    return false;
 }
 

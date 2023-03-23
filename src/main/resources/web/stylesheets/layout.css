@@ -101,4 +101,8 @@ form fieldset {
 .select2-container .select2-search--inline {
   margin-top: 0; }
 
+.tooltip-active {
+  pointer-events: auto;
+}
+
 /*# sourceMappingURL=layout.css.map */

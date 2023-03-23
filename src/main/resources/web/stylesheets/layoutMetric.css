@@ -1,0 +1,242 @@
+@import url("https://fonts.googleapis.com/css?family=PT+Sans");
+
+html {
+    font-family: 'PT Sans', sans-serif;
+    height: 100%;
+    overflow: hidden;
+    color: #ffffff;
+}
+
+body {
+    color: #ffffff;
+}
+
+.page-header {
+    background-color: #ffa948;
+    box-shadow: 43px 36px 80px rgba(0, 0, 0, 0.14);
+    height: 9vh;
+    color: #313b43;
+    z-index: 1;
+}
+
+.header-title {
+    font-weight: bold;
+}
+
+.page-header .header-right {
+    background-color: #ffffff;
+}
+
+img.small {
+    height: 50px;
+}
+
+.sidebar {
+    z-index: 2;
+    padding-right: 10px;
+    padding-left: 10px;
+    padding-top: 30px;
+    height: 91vh;
+    width: 25%;
+    left: 0;
+    position: fixed;
+    transition: all 0.8s ease;
+    background-color: #313b43;
+    border-top: solid 1px darkgray;
+    box-shadow: 1px 1px darkgray;
+}
+
+.sidebar-content > li {
+    margin-bottom: 30px;
+}
+
+#sidebarToggle {
+    border-radius: 50px;
+    border: none;
+    background-color: #ffa948;
+}
+
+body.active .sidebar {
+    left: -21%;
+}
+
+body.active #chart-area {
+    margin-left: 4%;
+    width: 96%;
+}
+
+.hide {
+    display: none;
+}
+
+.fa-solid {
+    color: #ffffff;
+    background-color: transparent;
+}
+
+.fa-bars {
+    color: #313b43;
+}
+
+#addButtonField {
+    border-style: solid;
+    border-color: #6c6c6c;
+    background-color: #ffffff;
+    color: #313b43;
+    box-shadow: 1px 1px #dfe1e2;
+    padding: 5px;
+    font-weight: 500;
+}
+
+#addGraphIcon {
+    background-color: #313b43;
+    border: none;
+    padding-top: 7px;
+    padding-right: 1px;
+}
+
+#addGraphIcon.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+
+a {
+    text-decoration: none;
+}
+
+.fill {
+    min-height: 100%;
+    height: 100%;
+}
+
+.sidebar-content > li > li {
+    list-style-type: none;
+    margin-bottom: 10px;
+    margin-top: 7px;
+}
+
+.delButton {
+    border: none;
+    background-color: inherit;
+}
+
+.form-select {
+    width: 100%;
+    border-color: #767676;
+}
+
+.modal-content {
+    border: none;
+    box-shadow: 2.2px 2.1px 5.3px rgba(0, 0, 0, 0.036),
+    7.4px 7.1px 17.9px rgba(0, 0, 0, 0.054),
+    33px 32px 80px rgba(0, 0, 0, 0.09);
+}
+
+.modal-header {
+    background-color: #ffa948;
+    color: #313b43;
+    border: none;
+}
+
+.modal-body {
+    background-color: #313b43;
+    border: none;
+}
+
+.modal-footer {
+    background-color: #313b43;
+    border: none;
+}
+
+
+.form-group {
+    margin: 10px;
+}
+
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: #313b43;
+}
+
+.h6 {
+    font-weight: 500;
+}
+
+.popover-header {
+    color: #313b43;
+}
+
+.popover-body {
+}
+
+#chart-area {
+    margin-left: 25%;
+    width: 75%;
+    height: 91vh;
+    transition: all 0.8s ease;
+    background-color: #dfe1e2;
+}
+
+#parent-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 3px;
+}
+
+#parent-container.two-up .child-container {
+    width: 98%;
+    height: 48%;
+}
+
+#parent-container.three-up .child-container {
+    width: 48%;
+    height: 48%;
+}
+
+#parent-container.three-up .child-container:last-child {
+    width: 98%;
+}
+
+#parent-container.four-up .child-container {
+    width: 48%;
+    height: 48%;
+}
+
+.child-container {
+    height: 98%;
+    width: 98%;
+    margin: 1%;
+    margin: auto;
+
+
+    background-color: #ffffff;
+    box-shadow: 0px 0px 2.7px rgba(0, 0, 0, 0.025),
+    0px 0px 6.9px rgba(0, 0, 0, 0.035),
+    0px 0px 14.2px rgba(0, 0, 0, 0.045),
+    0px 0px 29.2px rgba(0, 0, 0, 0.055),
+    0px 0px 80px rgba(0, 0, 0, 0.08);
+}
+
+#vertices {
+    max-width: 50%;
+}
+
+.vscomp-toggle-button {
+    border-radius: 0.25rem;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    border: 1px solid #ced4da;
+}
+
+.vscomp-arrow {
+    visibility: hidden;
+}
+
+
+
+
+

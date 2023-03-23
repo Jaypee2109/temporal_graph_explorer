@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Temporal Metric Explorer</title>
+
+    <!-- bootstrap 5 css framework -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
+          integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" type="text/css" href="../stylesheets/layoutMetric.css">
+    <!-- virtual select dropdown -->
+    <link rel="stylesheet" href="../stylesheets/virtual-select.min.css">
+
+
+</head>
+<body>
+<header class="page-header container-fluid d-flex h-100 flex-column sticky-top">
+    <div class="row flex-fill h-100">
+        <div class="col-3 my-auto logo h-100 fill">
+            <div class="row h-100 flex-fill">
+                <div class="col-2 text-center h-100">
+                    <button id="sidebarToggle">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+                <div class="col-10 h-100">
+                    <p class="h5 header-title">Temporal Metric Explorer</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-9 text-end my-auto header-right">
+            <nav>
+                <a tabindex="0" class="btn" role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                   data-bs-html=true data-bs-title="Temporal Graph Explorer"
+                   data-bs-content="<a href='snapshot.html'>Snapshot</a><br><a href='difference.html'>Difference</a><br><a href='keyedgrouping.html'>Grouping</a>">
+                    <img src="../images/tge-logo-small.png" class="img-fluid small" alt="Temporal Graph Explorer Logo">
+                </a>
+                <a href="https://www.uni-leipzig.de/en/">
+                    <img src="../images/ul-logo.png" class="img-fluid small" alt="Universität Leipzig Logo">
+                </a>
+                <a href="https://github.com/dbs-leipzig/gradoop">
+                    <img src="../images/gradoop.svg" class="img-fluid small" alt="Gradoop Logo">
+                </a>
+            </nav>
+        </div>
+    </div>
+</header>
+<main>
+    <aside>
+        <div class="sidebar">
+            <p class="h6">Graphs:</p><br>
+            <ul class="sidebar-content">
+                <li id="addGraphLi" class="row list-unstyled">
+                    <div class="col-10">
+                        <button id="addButtonField" class="btn AddGraphButton" data-bs-toggle="modal"
+                                data-bs-target="#graphConfiguration">
+                            <div class="buttonContent">
+                                Add new graph
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-2 addIcon">
+                        <button id="addGraphIcon" class="AddGraphButton" data-bs-toggle="modal"
+                                data-bs-target="#graphConfiguration">
+                            <i class="fa-solid fa-square-plus fa-lg"></i>
+                        </button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </aside>
+    <div id="chart-area" class="container-fluid d-flex flex-column">
+        <div id="parent-container" class="h-100">
+        </div>
+    </div>
+</main>
+
+<!-- bootstrap 5 -->
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+<!-- jQuery -->
+<script src="../javascript/jquery/jquery-1.11.3.min.js"></script>
+<!-- eCharts -->
+<script type="text/javascript" src="../javascript/eCharts/echarts.min.js"></script>
+<script src="../javascript/metric.js"></script>
+<script src="../javascript/common.js"></script>
+<!-- virtual select -->
+<script src="../javascript/virtualSelect/virtual-select.min.js"></script>
+
+<!-- BS Modal -->
+<div class="modal fade" id="graphConfiguration" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="GraphConfigurationLabel">Graph Configuration</h5>
+            </div>
+            <div class="modal-body">
+                <form class="graphConfigurationForm">
+                    <fieldset>
+                        <div class="row form-group">
+                            <label for="graphSelector" class="col-6 form-label">Choose a graph</label>
+                            <div class="col-6">
+                                <select class="form-select databaseName" id="graphSelector"></select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-6 form-label" for="metric">Metric</label>
+                            <div class="col-6">
+                                <select class="form-select" id="metric">
+                                    <option value="IN degree">IN Degree</option>
+                                    <option value="OUT degree">OUT Degree</option>
+                                    <option value="BOTH degree">BOTH Degree</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="predicateSelector" class="col-6 form-label">Predicate</label>
+                            <div class="col-6">
+                                <select class="form-select" id="predicateSelector">
+                                    <option value="all">ALL</option>
+                                    <option value="asOf">AS OF {t1}</option>
+                                    <option value="fromTo" selected>FROM {t1} TO {t2}</option>
+                                    <option value="betweenAnd">BETWEEN {t1} AND {t2}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-6 form-label" for="timestamp1">Timestamp 1 {t1}</label>
+                            <div class="col-6">
+                                <input class="form-control" type="text" id="timestamp1"
+                                       placeholder="2018-07-01 12:00:00" value="2018-07-01 12:00:00">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-6 form-label" for="timestamp2">Timestamp 2 {t2}</label>
+                            <div class="col-6">
+                                <input class="form-control" type="text" id="timestamp2"
+                                       placeholder="2018-08-01 12:00:00" value="2018-08-01 12:00:00">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label class="col-6 form-label" for="vertices">Vertices</label>
+                            <div class="col-6" id="vertices"></div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="calcGraph" type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="chartConfiguration" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ChartConfigurationLabel">Chart Configuration</h5>
+            </div>
+            <div class="modal-body">
+                <form class="chartConfigurationForm">
+                    <fieldset>
+                        <div class="row form-group">
+                            <label for="vertex1Select" class="col-4 form-label">Vertex 1</label>
+                            <div class="col-8" id="vertex1Select"></div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="vertex2Select" class="col-4 form-label">Vertex 2</label>
+                            <div class="col-8" id="vertex2Select"></div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="calcChart" type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="movingAverage" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="movingAverageLabel">Moving Average</h5>
+            </div>
+            <div class="modal-body">
+                <form class="movingAverageForm" onsubmit="return false;">
+                    <fieldset>
+                        <div class="row form-group">
+                            <label for="movingAverageSelector" class="col-12 form-label">Window Size:</label>
+                            <div class="col-12">
+                                <input type="range" min="0" max="1" value="0" class="form-rang"
+                                       id="movingAverageSelector" oninput="updateInput()">
+                                <input type="number" min="0" max="1" value="0" class="form-control-sm" id="sliderInput"
+                                       onchange="updateSlider()">
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="calcMovingAverage" type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
