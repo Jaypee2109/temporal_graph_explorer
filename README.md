@@ -43,10 +43,11 @@ One way to reduce complexity of a large temporal property graph is the grouping 
 
 ## Demo Instructions
 
+* Use JRE 1.8
 * Clone the repo
 * `$ mvn clean install`
 * `$ mvn exec:java -Dexec.mainClass="org.gradoop.demo.server.Server"`
-* Navigate to `http://localhost:2342/gradoop/html/snapshot.html` or `http://localhost:2342/gradoop/html/difference.html` or `http://localhost:2342/gradoop/html/keyedgrouping.html`
+* Navigate to `http://localhost:2342/gradoop/html/snapshot.html` or `http://localhost:2342/gradoop/html/difference.html` or `http://localhost:2342/gradoop/html/keyedgrouping.html` or `http://localhost:2342/gradoop/html/metric.html`
 * Select data set from drop down list
 * Enjoy
 
