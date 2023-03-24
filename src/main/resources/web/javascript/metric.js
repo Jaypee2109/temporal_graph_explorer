@@ -368,7 +368,7 @@ function movingAverageCall(myConfig) {
  * @param listOfAllVertices list of vertices to be calculated
  * @param movingWindowSize window size of the moving average
  *
- * @returns {*[]} data points with applied moving average
+ * @returns data points with applied moving average
  */
 function movingAverage(listOfAllVertices, movingWindowSize) {
 
@@ -501,7 +501,7 @@ function requestCall(request) {
 /**
  * Add new plot.
  *
- * @returns {number} index of the plot
+ * @returns index of the plot
  */
 function addGraphPlot() {
 
@@ -577,7 +577,7 @@ function saveMetric(reqSource, reqMetric, reqFrom, reqTo, response, plotId) {
  * Check if metric data is already buffered.
  *
  * @param request metric configuration
- * @returns {number} -1 if metric isn't buffered, otherwise index of metric in bufferedMetrics
+ * @returns -1 if metric isn't buffered, otherwise index of metric in bufferedMetrics
  */
 function bufferCheck(request) {
 
@@ -645,7 +645,17 @@ function bufferCheck(request) {
 function drawChart(vertexId1, vertexId2, plotId) {
 
     let bufferedData = bufferedMetrics[getBufferedDataIndex(plotId)];
-    let vertex1 = getVertexById(bufferedData.vertices, vertexId1);
+    let vertex1;
+
+    if (vertexId1 === "") {
+
+        if (bufferedData.vertices.length > 0) {
+            vertex1 = bufferedData.vertices[0];
+        }
+    } else {
+        vertex1 = getVertexById(bufferedData.vertices, vertexId1);
+    }
+
     let vertex2 = getVertexById(bufferedData.vertices, vertexId2);
     let dataAvailable = true;
     let vertices = [vertex1, vertex2];
@@ -962,7 +972,7 @@ function drawChart2(from, to, data, vertex1, vertex2, plotId) {
  * Get vertices for virtual select dropdown.
  *
  * @param vertices list of vertices
- * @returns {{options: *, label: *}[]} dropdown options in virtual select format
+ * @returns dropdown options in virtual select format
  */
 function getVirtualSelectOptions(vertices) {
 
@@ -1088,7 +1098,7 @@ function getLegend(label1, label2) {
  * Get labels from vertices.
  *
  * @param vertices list of vertices
- * @returns {*[]} list of labels
+ * @returns list of labels
  */
 function getLabels(vertices) {
     let labels = [null, null];
@@ -1129,7 +1139,7 @@ function getLabels(vertices) {
  * @param from first change of interval
  * @param to last change of interval
  * @param step step size for virtual points
- * @returns {*[]} virtual data points
+ * @returns virtual data points
  */
 function getVirtualData(data, from, to, step) {
 
@@ -1216,7 +1226,7 @@ function getVirtualData(data, from, to, step) {
  * @param vertices list of temporal vertices to be considered
  * @param data metric evolution
  *
- * @return first change in UNIX Epoch milliseconds
+ * @returns first change in UNIX Epoch milliseconds
  */
 function getFirstTimestamp(vertices, data) {
     let minTime = 9223372036854776000;
@@ -1257,7 +1267,7 @@ function getFirstTimestamp(vertices, data) {
  *
  * @param vertices list of temporal vertices to be considered
  * @param data metric evolution
- * @return last change in UNIX Epoch milliseconds
+ * @returns last change in UNIX Epoch milliseconds
  */
 function getLastTimestamp(vertices, data) {
     let maxTime = 0;
@@ -1303,7 +1313,7 @@ function getLastTimestamp(vertices, data) {
  * @param from first timestamp of interval
  * @param to last timestamp of interval
  *
- * @return size of a time step
+ * @returns size of a time step
  */
 function getGranularity(from, to) {
     let interval = to - from;
@@ -1316,7 +1326,7 @@ function getGranularity(from, to) {
  * @param arr the array that contains the element
  * @param obj the element to be removed
  *
- * @returns {boolean} true if element was removed otherwise false
+ * @returns true if element was removed otherwise false
  */
 function removeObject(arr, obj) {
     for (let i = 0; i < arr.length; i++) {
@@ -1334,7 +1344,7 @@ function removeObject(arr, obj) {
  * @param arr the array
  * @param obj the element to be checked
  *
- * @returns {boolean} true if element is in array otherwise false
+ * @returns true if element is in array otherwise false
  */
 function containsObject(arr, obj) {
     for (let i = 0; i < arr.length; i++) {
@@ -1352,7 +1362,7 @@ let isSubset = (arr, target) => target.every(v => arr.includes(v));
  *
  * @param vertices list of vertices
  * @param id id of the vertex
- * @returns {null} the vertex if there is a matching one
+ * @returns the vertex if there is a matching one
  */
 function getVertexById(vertices, id) {
     let res = null;
@@ -1370,7 +1380,7 @@ function getVertexById(vertices, id) {
  * Get index of data in bufferedMetrics by plotId.
  *
  * @param plotId plotId of ECharts instance
- * @returns {number} -1 if plotId isn't assigned to bufferedMetrics, otherwise index of data in bufferedMetrics
+ * @returns -1 if plotId isn't assigned to bufferedMetrics, otherwise index of data in bufferedMetrics
  */
 function getBufferedDataIndex(plotId) {
     let index = -1;
