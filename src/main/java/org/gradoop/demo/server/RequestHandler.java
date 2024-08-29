@@ -692,6 +692,7 @@ public class RequestHandler {
                                       TimeDimension timeDimension,
                                       MetricRequest request) throws Exception {
 
+        long numOfSamples = 1000L; //number of timestamps 
 
         List<TemporalVertex> requestedVertices = vertices.collect();
         List<GradoopId> requestedVerticesId = requestedVertices.stream().map(TemporalVertex::getId).collect(Collectors.toList());
@@ -724,7 +725,7 @@ public class RequestHandler {
         long lastTime = getLastTimestamp(filteredVertices, metrics) + 1;
 
         JSONObject centricDegreeValues = centricDegree(graph, degreeType, timeDimension, filteredVertices, firstTime, lastTime);
-        JSONArray metricData = getMetricEvolution(metrics, firstTime, lastTime, getGranularity(firstTime, lastTime));
+        JSONArray metricData = getMetricEvolution(metrics, firstTime, lastTime, getGranularity(firstTime, lastTime, 1000));
 
 
         try {
@@ -810,15 +811,16 @@ public class RequestHandler {
     }
 
     /**
-     * Get step size of given interval for 1000 timestamps.
+     * Get step size of given interval for num timestamps.
      *
      * @param from first timestamp of interval
      * @param to   last timestamp of interval
+     * @param num number of samples
      * @return dimension of a time step
      */
-    private long getGranularity(long from, long to) {
+    private long getGranularity(long from, long to, long num) {
         long interval = to - from;
-        return interval / 1000;
+        return interval / num;
     }
 
 
